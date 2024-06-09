@@ -1,0 +1,111 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  CloudFormation template to implement a multi-account strategy with AWS Organizations,
+  centralized logging using CloudTrail and CloudWatch, and secure cross-account access using IAM roles.
+
+Resources:
+  Organization:
+    Type: AWS::Organizations::Organization
+    Properties:
+      FeatureSet: ALL
+
+  CloudTrail:
+    Type: AWS::CloudTrail::Trail
+    Properties:
+      IsLogging: true
+      S3BucketName: !Ref LogBucket
+      IncludeGlobalServiceEvents: true
+      IsMultiRegionTrail: true
+
+  LogBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: central-logging-bucket
+      AccessControl: LogDeliveryWrite
+      LifecycleConfiguration:
+        Rules:
+          - Status: Enabled
+            NoncurrentVersionExpirationInDays: 365
+            ExpirationInDays: 3650
+
+  CloudWatchLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/cloudtrail/logs
+      RetentionInDays: 365
+
+  CloudTrailToCloudWatch:
+    Type: AWS::CloudTrail::Trail
+    Properties:
+      IsLogging: true
+      CloudWatchLogsLogGroupArn: !GetAtt CloudWatchLogGroup.Arn
+      CloudWatchLogsRoleArn: !GetAtt CloudTrailRole.Arn
+      S3BucketName: !Ref LogBucket
+
+  CloudTrailRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: cloudtrail.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: CloudTrailPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !GetAtt CloudWatchLogGroup.Arn
+
+  IAMCrossAccountRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: CrossAccountAccessRole
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: arn:aws:iam::ACCOUNT_ID:root
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: CrossAccountPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:ListBucket
+                  - s3:GetObject
+                  - cloudtrail:LookupEvents
+                Resource: '*'
+
+Outputs:
+  OrganizationId:
+    Description: "The ID of the created AWS Organization"
+    Value: !Ref Organization
+
+  CloudTrailArn:
+    Description: "The ARN of the created CloudTrail"
+    Value: !GetAtt CloudTrail.Arn
+
+  LogBucketName:
+    Description: "The name of the S3 bucket for CloudTrail logs"
+    Value: !Ref LogBucket
+
+  IAMCrossAccountRoleArn:
+    Description: "The ARN of the IAM role for cross-account access"
+    Value: !GetAtt IAMCrossAccountRole.Arn
+
+
+/*
+Replace ACCOUNT_ID with the actual AWS Account ID that needs cross-account access.
+The S3BucketName and LogBucket names should be unique within your AWS environment.
+Make sure the necessary permissions and prerequisites are met for the AWS services and resources being used.
+*\
