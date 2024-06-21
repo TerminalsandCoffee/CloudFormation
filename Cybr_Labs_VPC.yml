@@ -4,7 +4,6 @@
 # - An Internet Gateway attached to the VPC.
 # - Two public subnets and two private subnets in different availability zones.
 # - Routing tables for public and private subnets with appropriate routes.
-# - An S3 Gateway Endpoint for private access to Amazon S3 from the private subnets.
 
 AWSTemplateFormatVersion: '2010-09-09'
 Description: This CF template creates a VPC with public and private subnets, & internet gateway.
