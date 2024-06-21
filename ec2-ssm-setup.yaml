@@ -1,0 +1,57 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Template to configure an EC2 instance with AWS Systems Manager
+
+Resources:
+  MyEC2Role:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: 'Allow'
+            Principal:
+              Service: 'ec2.amazonaws.com'
+            Action: 'sts:AssumeRole'
+      Path: '/'
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM'
+      RoleName: 'AmazonEC2RoleforSSM'
+
+  MyInstanceProfile:
+    Type: 'AWS::IAM::InstanceProfile'
+    Properties:
+      Path: '/'
+      Roles:
+        - Ref: 'MyEC2Role'
+
+  MySecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: 'Allow outbound access for Systems Manager'
+      SecurityGroupIngress:
+        - IpProtocol: 'tcp'
+          FromPort: 22
+          ToPort: 22
+          CidrIp: '0.0.0.0/0'
+      SecurityGroupEgress:
+        - IpProtocol: '-1'
+          FromPort: '-1'
+          ToPort: '-1'
+          CidrIp: '0.0.0.0/0'
+      VpcId: 'vpc-xxxxxx' # Replace with your VPC ID
+
+  MyEC2Instance:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      InstanceType: 't2.micro'
+      KeyName: 'your-key-pair' # Replace with your key pair name
+      ImageId: 'ami-08a0d1e16fc3f61ea' # Amazon Linux 23 AMI
+      IamInstanceProfile: !Ref 'MyInstanceProfile'
+      SecurityGroupIds:
+        - !Ref 'MySecurityGroup'
+      SubnetId: 'subnet-xxxxxx' # Replace with your subnet ID
+
+Outputs:
+  InstanceId:
+    Description: 'ID of the EC2 instance'
+    Value: !Ref 'MyEC2Instance'
