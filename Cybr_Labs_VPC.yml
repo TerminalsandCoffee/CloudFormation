@@ -7,8 +7,7 @@
 # - An S3 Gateway Endpoint for private access to Amazon S3 from the private subnets.
 
 AWSTemplateFormatVersion: '2010-09-09'
-Description: Create a VPC with public and private subnets, internet gateway, and
-  S3 Gateway Endpoint
+Description: This CF template creates a VPC with public and private subnets, & internet gateway.
 
 Mappings:
   SubnetConfig:
@@ -105,11 +104,3 @@ Resources:
       DestinationCidrBlock: 10.0.0.0/24
  #    VpcPeeringConnectionId: pl-1111
 
-  S3GatewayEndpoint:
-    Type: AWS::EC2::VPCEndpoint
-    Properties:
-      VpcId: !Ref VPC
-      ServiceName: com.amazonaws.us-east-1.s3
-      RouteTableIds:
-        - !Ref PrivateRouteTableA
-        - !Ref PrivateRouteTableB
