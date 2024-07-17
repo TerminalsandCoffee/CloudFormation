@@ -1,4 +1,16 @@
 Resources:
+  IAMUser:
+    Type: 'AWS::IAM::User'
+    Properties:
+      LoginProfile:
+        Password: !Ref Password
+        PasswordResetRequired: !Ref PasswordResetRequired
+
+  IAMAccessKey:
+    Type: 'AWS::IAM::AccessKey'
+    Properties:
+      UserName: !Ref IAMUser
+    
   MyVPC:
     Type: 'AWS::EC2::VPC'
     Properties:
@@ -126,3 +138,15 @@ Outputs:
     Value: !GetAtt IAMAccessKey.SecretAccessKey
     Export:
       Name: 'SecretAccessKey'
+
+  URL:
+    Description: 'Login link for the lab IAM user'
+    Value: !Sub 'https://${AWS::AccountId}.signin.aws.amazon.com/console'
+    Export:
+      Name: 'URL'
+
+  Username:
+    Description: 'Username of the lab IAM user'
+    Value: !Ref IAMUser
+    Export:
+      Name: 'Username'
